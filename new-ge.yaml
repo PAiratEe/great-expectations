@@ -19,4 +19,38 @@ spec:
           image: pairate/ge-rest:0.0.3
           ports:
             - containerPort: 5000
+          volumeMounts:
+            - name: ge-data
+              mountPath: /ge
           imagePullPolicy: Always
+        - name: git-sync
+          image: k8s.gcr.io/git-sync/git-sync:v4.0.0
+          env:
+            - name: GIT_SYNC_REPO
+              value: https://github.com/PAiratEe/great-expectations.git
+            - name: GIT_SYNC_BRANCH
+              value: master
+            - name: GIT_SYNC_ROOT
+              value: /git
+            - name: GIT_SYNC_LINK
+              value: ge
+            - name: GIT_SYNC_PERIOD
+              value: "30s"
+            - name: GIT_SYNC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: GIT_SYNC_USERNAME
+            - name: GIT_SYNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: GIT_SYNC_PASSWORD
+          volumeMounts:
+            - name: ge-data
+              mountPath: /git
+      volumes:
+        - name: ge-data
+          persistentVolumeClaim:
+            claimName: ge-pvc
+
