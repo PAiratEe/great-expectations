@@ -22,6 +22,7 @@ spec:
           volumeMounts:
             - name: ge-data
               mountPath: /ge
+              subPath: ge
           imagePullPolicy: Always
         - name: git-sync
           image: k8s.gcr.io/git-sync/git-sync:v4.0.0
@@ -53,4 +54,3 @@ spec:
         - name: ge-data
           persistentVolumeClaim:
             claimName: ge-pvc
-
