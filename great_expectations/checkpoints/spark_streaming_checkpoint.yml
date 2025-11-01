@@ -1,0 +1,16 @@
+name: spark_streaming_checkpoint
+config_version: 1.0
+class_name: Checkpoint
+
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: store_evaluation_params
+    action:
+      class_name: StoreEvaluationParametersAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
+
+run_name_template: "%Y%m%d-%H%M%S-spark_streaming"

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ge-server
+  labels:
+    app: ge-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ge-server
+  template:
+    metadata:
+      labels:
+        app: ge-server
+    spec:
+      initContainers:
+        - name: ge-init
+          image: pairate/ge-rest:0.0.1
+          command:
+            - sh
+            - -c
+            - |
+              echo "📦 init start"
+              if [ ! -f /mnt/ge/great_expectations/great_expectations.yml ]; then
+                cp -r /ge/* /mnt/ge/
+              else
+                echo "✅ already exists"
+              fi
+              echo "✅ init done"
+          volumeMounts:
+            - name: ge-data
+              mountPath: /mnt/ge
+          imagePullPolicy: Always
+      containers:
+        - name: ge-server
+          image: pairate/ge-rest:0.0.1
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: ge-data
+              mountPath: /ge
+          imagePullPolicy: Always
+      volumes:
+        - name: ge-data
+          persistentVolumeClaim:
+            claimName: ge-pvc

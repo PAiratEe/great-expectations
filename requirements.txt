@@ -1,0 +1,5 @@
+great_expectations==0.15.26
+flask
+flask-cors
+pyspark==3.5.0
+pandas

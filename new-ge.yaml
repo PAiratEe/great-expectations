@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ge-server
+  labels:
+    app: ge-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ge-server
+  template:
+    metadata:
+      labels:
+        app: ge-server
+    spec:
+      containers:
+        - name: ge-server
+          image: pairate/ge-rest:0.0.3
+          ports:
+            - containerPort: 5000
+          imagePullPolicy: Always

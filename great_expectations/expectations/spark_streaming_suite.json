@@ -1,0 +1,17 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "spark_streaming_suite",
+  "expectations": [
+    {
+      "expectation_type": "expect_column_values_to_not_match_regex",
+      "kwargs": {
+      "column": "user",
+      "regex": "(?i)(Bot$|-bot$)",
+      "mostly": 1.0
+      }
+    }
+  ],
+  "meta": {
+    "great_expectations_version": "0.17.21"
+  }
+}
