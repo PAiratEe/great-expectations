@@ -17,7 +17,7 @@ def validate():
         req = request.get_json()
         rows = req.get("data", [])
         suite_name = req.get("suite_name", DEFAULT_SUITE)
-        checkpoint_name = req.get("checkpoint_name", suite_name.replace("_suite", "_checkpoint"))
+        checkpoint_name = DEFAULT_CHECKPOINT
 
         if not rows:
             return jsonify({"error": "No data provided", "result": []}), 400
