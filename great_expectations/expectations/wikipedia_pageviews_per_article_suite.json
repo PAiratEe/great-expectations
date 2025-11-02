@@ -1,0 +1,20 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "wikipedia_pageviews_per_article_suite",
+  "expectations": [
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "project"},
+      "meta": {"notes": "Project не должен быть пустым"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "views", "min_value": 1, "max_value": 20},
+      "meta": {"notes": "Просмотры в пределах 1-20"}
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.18.11"
+  }
+}
