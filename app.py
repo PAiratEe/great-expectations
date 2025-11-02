@@ -22,7 +22,7 @@ def validate():
         if not rows:
             return jsonify({"error": "No data provided", "result": []}), 400
         df = pd.DataFrame(rows)
-        print("DEBUG DATA:", df.to_dict(orient="records"))
+        app.logger.info("DEBUG DATA:", df.to_dict(orient="records"))
 
         batch_request = RuntimeBatchRequest(
             datasource_name="my_filesystem_datasource",
@@ -46,7 +46,7 @@ def validate():
         run_results = results['run_results']
         mask = [True] * len(df)
 
-        print(run_results)
+        app.logger.info(run_results)
         for run_id, run_result in run_results.items():
             validation_result = run_result.get("validation_result", {})
             for res in validation_result.get("results", []):
@@ -57,7 +57,7 @@ def validate():
                 if not success:
                     failed_indices = res["result"].get("unexpected_index_list") or []
                     failed_values = res["result"].get("partial_unexpected_list", [])
-                    print(f"⚠️ Failed expectation: {expectation_type} on column {col}")
+                    app.logger.info(f"⚠️ Failed expectation: {expectation_type} on column {col}")
 
                     if failed_indices:
                         for i in failed_indices:
@@ -71,12 +71,12 @@ def validate():
 
         passed = sum(mask)
         failed = len(mask) - passed
-        print(f"✅ Validation finished: {passed} passed, {failed} failed")
+        app.logger.info(f"✅ Validation finished: {passed} passed, {failed} failed")
         return jsonify({"result": mask})
 
     except Exception as e:
         import traceback
-        print(traceback.format_exc())
+        app.logger.info(traceback.format_exc())
         return jsonify({"error": str(e), "result": []}), 500
 
 

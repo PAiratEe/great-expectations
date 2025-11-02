@@ -9,12 +9,12 @@
     },
     {
       "expectation_type": "expect_column_values_to_be_between",
-      "kwargs": {"column": "views", "min_value": 0},
+      "kwargs": {"column": "articles__views", "min_value": 0},
       "meta": {"notes": "Количество просмотров неотрицательное"}
     },
     {
       "expectation_type": "expect_column_values_to_be_between",
-      "kwargs": {"column": "rank", "min_value": 1, "max_value": 20},
+      "kwargs": {"column": "articles__rank", "min_value": 1, "max_value": 20},
       "meta": {"notes": "Ранг в пределах 1–20"}
     }
   ],
