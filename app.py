@@ -45,23 +45,33 @@ def validate():
 
         run_results = results['run_results']
         mask = [True] * len(df)
+
+        print(run_results)
         for run_id, run_result in run_results.items():
             validation_result = run_result.get("validation_result", {})
             for res in validation_result.get("results", []):
                 success = res.get("success", True)
+                expectation_type = res["expectation_config"]["expectation_type"]
+                col = res["expectation_config"]["kwargs"].get("column")
+
                 if not success:
-                    failed_indices = res["result"].get("unexpected_index_list")
+                    failed_indices = res["result"].get("unexpected_index_list") or []
                     failed_values = res["result"].get("partial_unexpected_list", [])
-                    print(f"⚠️ Failed expectation: {res['expectation_config']['expectation_type']}")
+                    print(f"⚠️ Failed expectation: {expectation_type} on column {col}")
+
                     if failed_indices:
                         for i in failed_indices:
-                            mask[i] = False
-                    elif failed_values:
-                        col = res["expectation_config"]["kwargs"].get("column")
-                        mask = [not (row.get(col) in failed_values) for _, row in df.iterrows()]
+                            if 0 <= i < len(mask):
+                                mask[i] = False
 
-                print(f"✅ Validation finished: {sum(mask)} passed, {len(mask) - sum(mask)} failed")
-                return jsonify({"result": mask})
+                    elif failed_values and col in df.columns:
+                        for idx, row in df.iterrows():
+                            if row.get(col) in failed_values:
+                                mask[idx] = False
+
+        passed = sum(mask)
+        failed = len(mask) - passed
+        print(f"✅ Validation finished: {passed} passed, {failed} failed")
 
     except Exception as e:
         import traceback
