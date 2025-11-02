@@ -19,12 +19,12 @@
     },
     {
       "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": {"column": "source.name"},
+      "kwargs": {"column": "source__name"},
       "meta": {"notes": "Источник должен иметь имя"}
     },
     {
       "expectation_type": "expect_compound_columns_to_be_unique",
-      "kwargs": {"column_list": ["title", "source.name", "publishedAt"]},
+      "kwargs": {"column_list": ["title", "source__name", "publishedAt"]},
       "meta": {"notes": "Не должно быть дублей по заголовку и дате в рамках источника"}
     }
   ],
