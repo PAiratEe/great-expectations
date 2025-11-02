@@ -72,6 +72,7 @@ def validate():
         passed = sum(mask)
         failed = len(mask) - passed
         print(f"✅ Validation finished: {passed} passed, {failed} failed")
+        return jsonify({"result": mask})
 
     except Exception as e:
         import traceback
