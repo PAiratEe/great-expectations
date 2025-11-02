@@ -27,14 +27,14 @@ def validate():
         batch_request = RuntimeBatchRequest(
             datasource_name="my_filesystem_datasource",
             data_connector_name="default_runtime_data_connector_name",
-            data_asset_name="spark_streaming_data",
+            data_asset_name="spark_data",
             runtime_parameters={"batch_data": df},
             batch_identifiers={"default_identifier_name": "default_identifier"},
             batch_spec_passthrough={"ge_batch_kwargs": {"result_format": "COMPLETE"}}
         )
 
         results = context.run_checkpoint(
-            checkpoint_name=CHECKPOINT_NAME,
+            checkpoint_name=checkpoint_name,
             validations=[
                 {
                     "batch_request": batch_request,
@@ -46,36 +46,28 @@ def validate():
         run_results = results['run_results']
         mask = [True] * len(df)
         for run_id, run_result in run_results.items():
-            for r in run_result['validation_result']['results']:
-                if r['expectation_config']['expectation_type'] == 'expect_column_values_to_not_match_regex':
-                    failed_idx = r['result'].get('unexpected_index_list')
-                    print("DEBUG INDEX:", failed_idx)
-                    if failed_idx is not None:
-                        mask = [i not in failed_idx for i in range(len(df))]
-                    else:
-                        failed_values = set(r['result'].get('partial_unexpected_list', []))
-                        mask = [row["user"] not in failed_values for _, row in df.iterrows()]
-                    print("DEBUG MASK:", mask)
-        return jsonify({"result": mask})
+            validation_result = run_result.get("validation_result", {})
+            for res in validation_result.get("results", []):
+                success = res.get("success", True)
+                if not success:
+                    failed_indices = res["result"].get("unexpected_index_list")
+                    failed_values = res["result"].get("partial_unexpected_list", [])
+                    print(f"⚠️ Failed expectation: {res['expectation_config']['expectation_type']}")
+                    if failed_indices:
+                        for i in failed_indices:
+                            mask[i] = False
+                    elif failed_values:
+                        col = res["expectation_config"]["kwargs"].get("column")
+                        mask = [not (row.get(col) in failed_values) for _, row in df.iterrows()]
+
+                print(f"✅ Validation finished: {sum(mask)} passed, {len(mask) - sum(mask)} failed")
+                return jsonify({"result": mask})
 
     except Exception as e:
         import traceback
         print(traceback.format_exc())
         return jsonify({"error": str(e), "result": []}), 500
 
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
