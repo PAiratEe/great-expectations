@@ -14,24 +14,6 @@ spec:
       labels:
         app: ge-server
     spec:
-      initContainers:
-        - name: ge-init
-          image: pairate/ge-rest:0.0.1
-          command:
-            - sh
-            - -c
-            - |
-              echo "📦 init start"
-              if [ ! -f /mnt/ge/great_expectations/great_expectations.yml ]; then
-                cp -r /ge/* /mnt/ge/
-              else
-                echo "✅ already exists"
-              fi
-              echo "✅ init done"
-          volumeMounts:
-            - name: ge-data
-              mountPath: /mnt/ge
-          imagePullPolicy: Always
       containers:
         - name: ge-server
           image: pairate/ge-rest:0.0.1
