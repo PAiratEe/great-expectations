@@ -1,0 +1,18 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "sample_data_users_suite",
+  "expectations": [
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "age",
+        "min_value": 18,
+        "max_value": 65
+      }
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.18.11"
+  }
+}
