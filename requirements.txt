@@ -3,4 +3,4 @@ flask
 flask-cors
 pyspark==3.5.0
 pandas
-ge-datahub
+acryl-datahub
