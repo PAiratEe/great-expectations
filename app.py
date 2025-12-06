@@ -1,9 +1,8 @@
-from flask import Flask, request, jsonify
 import great_expectations as gx
-from great_expectations.core.batch import RuntimeBatchRequest
+import clickhouse_connect
+from great_expectations.core.batch import RuntimeBatchRequest, BatchRequest
 import pandas as pd
-
-app = Flask(__name__)
+import argparse
 
 GE_DIR = "/ge/great_expectations"
 DEFAULT_CHECKPOINT = "spark_streaming_checkpoint"
@@ -11,74 +10,46 @@ DEFAULT_SUITE = "spark_streaming_suite"
 
 context = gx.DataContext(GE_DIR)
 
-@app.route('/validate', methods=['POST'])
-def validate():
-    try:
-        req = request.get_json()
-        rows = req.get("data", [])
-        suite_name = req.get("suite_name", DEFAULT_SUITE)
-        checkpoint_name = DEFAULT_CHECKPOINT
+client = clickhouse_connect.get_client(
+    host="clickhouse.default.svc.cluster.local",
+    username="default",
+    password="dCkUgJH3JI",
+    port=9000
+)
 
-        if not rows:
-            return jsonify({"error": "No data provided", "result": []}), 400
-        df = pd.DataFrame(rows)
-        app.logger.info("DEBUG DATA:", df.to_dict(orient="records"))
+parser = argparse.ArgumentParser()
 
-        batch_request = RuntimeBatchRequest(
-            datasource_name="my_filesystem_datasource",
-            data_connector_name="default_runtime_data_connector_name",
-            data_asset_name="spark_data",
-            runtime_parameters={"batch_data": df},
-            batch_identifiers={"default_identifier_name": "default_identifier"},
-            batch_spec_passthrough={"ge_batch_kwargs": {"result_format": "COMPLETE"}}
-        )
+parser.add_argument("--table", required=True)
+parser.add_argument("--year", required=True)
+parser.add_argument("--month", required=True)
+parser.add_argument("--day", required=True)
 
-        results = context.run_checkpoint(
-            checkpoint_name=checkpoint_name,
-            validations=[
-                {
-                    "batch_request": batch_request,
-                    "expectation_suite_name": suite_name
-                }
-            ]
-        )
+args = parser.parse_args()
+table = args.table
+date = f"{args.year}-{args.month}-{args.day}"
+suite_name = f"{table}_suite"
+checkpoint_name = DEFAULT_CHECKPOINT
 
-        run_results = results['run_results']
-        mask = [True] * len(df)
+batch_request = BatchRequest(
+    datasource_name="clickhouse_ds",
+    data_connector_name="ch_tables",
+    data_asset_name=f"default.{table}",
+    batch_spec_passthrough={
+        "query": f"""
+            SELECT *
+            FROM {table}
+            WHERE toDate(updated_at) = '{date}'
+        """
+    }
+)
 
-        app.logger.info(run_results)
-        for run_id, run_result in run_results.items():
-            validation_result = run_result.get("validation_result", {})
-            for res in validation_result.get("results", []):
-                success = res.get("success", True)
-                expectation_type = res["expectation_config"]["expectation_type"]
-                col = res["expectation_config"]["kwargs"].get("column")
+results = context.run_checkpoint(
+    checkpoint_name=checkpoint_name,
+    validations=[
+        {
+            "batch_request": batch_request,
+            "expectation_suite_name": suite_name
+        }
+    ]
+)
 
-                if not success:
-                    failed_indices = res["result"].get("unexpected_index_list") or []
-                    failed_values = res["result"].get("partial_unexpected_list", [])
-                    app.logger.info(f"⚠️ Failed expectation: {expectation_type} on column {col}")
-
-                    if failed_indices:
-                        for i in failed_indices:
-                            if 0 <= i < len(mask):
-                                mask[i] = False
-
-                    elif failed_values and col in df.columns:
-                        for idx, row in df.iterrows():
-                            if row.get(col) in failed_values:
-                                mask[idx] = False
-
-        passed = sum(mask)
-        failed = len(mask) - passed
-        app.logger.info(f"✅ Validation finished: {passed} passed, {failed} failed")
-        return jsonify({"result": mask})
-
-    except Exception as e:
-        import traceback
-        app.logger.info(traceback.format_exc())
-        return jsonify({"error": str(e), "result": []}), 500
-
-
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
