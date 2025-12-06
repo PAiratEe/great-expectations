@@ -14,7 +14,7 @@ client = clickhouse_connect.get_client(
     host="clickhouse.default.svc.cluster.local",
     username="default",
     password="dCkUgJH3JI",
-    port=9000
+    port=8123
 )
 
 parser = argparse.ArgumentParser()
