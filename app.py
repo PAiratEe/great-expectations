@@ -52,13 +52,14 @@ def main():
         datasource_name="postgres_ds",
         data_connector_name="pg_tables",
         data_asset_name=table,
-        batch_spec_passthrough={
+        runtime_parameters={
             "query": f"""
                 SELECT *
                 FROM {table}
                 WHERE updated_at::date = '{date}'
             """
-        }
+        },
+        batch_identifiers={"default_identifier_name": f"run_{date}"}
     )
 
     results = context.run_checkpoint(
