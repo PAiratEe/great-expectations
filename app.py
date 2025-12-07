@@ -37,7 +37,7 @@ def main():
 
     args = parser.parse_args()
     table = args.table
-    clean_table = f"analytics.{table}"
+    clean_table = f"analytics.mart_{table}"
     date = f"{args.year}-{args.month}-{args.day}"
     suite_name = f"{table}_suite"
     checkpoint_name = DEFAULT_CHECKPOINT
