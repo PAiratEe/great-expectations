@@ -48,7 +48,7 @@ def main():
     suite_name = f"{table}_suite"
     checkpoint_name = DEFAULT_CHECKPOINT
 
-    batch_request = BatchRequest(
+    batch_request = RuntimeBatchRequest(
         datasource_name="postgres_ds",
         data_connector_name="pg_tables",
         data_asset_name=table,
