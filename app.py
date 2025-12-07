@@ -112,7 +112,7 @@ def main():
     mask = [True] * len(df)
 
     for _, run_result in results_pandas["run_results"].items():
-        validation_result = results_pandas.get("validation_result", {})
+        validation_result = run_result.get("validation_result", {})
         batch_spec = validation_result.get("meta", {}).get("batch_spec", {})
         data_asset_name = batch_spec.get("data_asset_name", "")
 
