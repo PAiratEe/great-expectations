@@ -89,21 +89,30 @@ def main():
             {
                 "batch_request": batch_request_sql,
                 "expectation_suite_name": suite_name
-            },
+            }
+        ]
+    )
+
+    results_pandas = context.run_checkpoint(
+        checkpoint_name=checkpoint_name,
+        validations=[
             {
-                "batch_request": batch_request_pandas,
+                "batch_request": batch_request_sql,
                 "expectation_suite_name": suite_name
             }
         ]
     )
 
     run_results = results['run_results']
-    print(f"[GE] {run_results}")
+    print(f"[GE metadata] {run_results}")
+
+    run_results_pandas = results_pandas['run_results']
+    print(f"[GE data to CH] {run_results_pandas}")
 
     mask = [True] * len(df)
 
-    for _, run_result in results["run_results"].items():
-        validation_result = run_result.get("validation_result", {})
+    for _, results_pandas in results["run_results"].items():
+        validation_result = results_pandas.get("validation_result", {})
         batch_spec = validation_result.get("meta", {}).get("batch_spec", {})
         data_asset_name = batch_spec.get("data_asset_name", "")
 
