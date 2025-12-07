@@ -50,3 +50,13 @@ datasources:
         class_name: RuntimeDataConnector
         batch_identifiers:
           - default_identifier_name
+
+  my_filesystem_datasource:
+    class_name: Datasource
+    execution_engine:
+      class_name: PandasExecutionEngine
+    data_connectors:
+      default_runtime_data_connector_name:
+        class_name: RuntimeDataConnector
+        batch_identifiers:
+          - default_identifier_name

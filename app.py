@@ -48,7 +48,7 @@ def main():
     suite_name = f"{table}_suite"
     checkpoint_name = DEFAULT_CHECKPOINT
 
-    batch_request = RuntimeBatchRequest(
+    batch_request_sql = RuntimeBatchRequest(
         datasource_name="postgres_ds",
         data_connector_name="pg_tables",
         data_asset_name=table,
@@ -62,11 +62,36 @@ def main():
         batch_identifiers={"default_identifier_name": f"run_{date}"}
     )
 
+    pg_cursor.execute(
+        f"""
+        SELECT *
+        FROM {table}
+        WHERE updated_at::date = %s
+        """,
+        (date,),
+    )
+
+    rows = pg_cursor.fetchall()
+    df = pd.DataFrame(rows)
+
+    batch_request_pandas = RuntimeBatchRequest(
+        datasource_name="my_filesystem_datasource",
+        data_connector_name="default_runtime_data_connector_name",
+        data_asset_name=f"{table}_runtime",
+        runtime_parameters={"batch_data": df},
+        batch_identifiers={"default_identifier_name": f"run_{date}"},
+        batch_spec_passthrough={"ge_batch_kwargs": {"result_format": "COMPLETE"}},
+    )
+
     results = context.run_checkpoint(
         checkpoint_name=checkpoint_name,
         validations=[
             {
-                "batch_request": batch_request,
+                "batch_request": batch_request_sql,
+                "expectation_suite_name": suite_name
+            },
+            {
+                "batch_request": batch_request_pandas,
                 "expectation_suite_name": suite_name
             }
         ]
@@ -75,82 +100,42 @@ def main():
     run_results = results['run_results']
     print(f"[GE] {run_results}")
 
-    bad_indices = set()
+    mask = [True] * len(df)
 
-    run_results = results.get("run_results", {})
-    for _, run_result in run_results.items():
+    for _, run_result in results["run_results"].items():
         validation_result = run_result.get("validation_result", {})
+        batch_spec = validation_result.get("meta", {}).get("batch_spec", {})
+        data_asset_name = batch_spec.get("data_asset_name", "")
+
+        if not data_asset_name.endswith("_runtime"):
+            continue
 
         for res in validation_result.get("results", []):
-            result_block = res.get("result", {})
-            idxs = result_block.get("unexpected_index_list", [])
-            if idxs:
-                bad_indices.update(idxs)
+            success = res.get("success", True)
+            col = res["expectation_config"]["kwargs"].get("column")
 
-    bad_indices = sorted(bad_indices)
-    print(f"[GE] bad row indices: {bad_indices}")
+            if not success:
+                failed_indices = res["result"].get("unexpected_index_list") or []
+                failed_values = res["result"].get("partial_unexpected_list", [])
 
-    if bad_indices:
-        idx_list_sql = ",".join(str(i) for i in bad_indices)
+                if failed_indices:
+                    for i in failed_indices:
+                        if 0 <= i < len(mask):
+                            mask[i] = False
 
-        pg_cursor.execute(
-            f"""
-            SELECT id
-            FROM (
-                SELECT id, row_number() OVER () - 1 AS idx
-                FROM {table}
-                WHERE updated_at::date = %s
-            ) t
-            WHERE idx IN ({idx_list_sql})
-            """,
-            (date,),
-        )
-        rows = pg_cursor.fetchall()
-        bad_ids = [r["id"] for r in rows]
-    else:
-        bad_ids = []
+                elif failed_values and col in df.columns:
+                    for idx, row in df.iterrows():
+                        if row.get(col) in failed_values:
+                            mask[idx] = False
 
-    print(f"[GE] bad ids: {bad_ids}")
+    good_df = df[[m for m in mask]]
 
-    pg_cursor.execute(
-        """
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = %s
-        ORDER BY ordinal_position
-        """,
-        (table,),
-    )
-    cols = [r["column_name"] for r in pg_cursor.fetchall()]
-    cols_csv = ", ".join(cols)
+    print(f"[GE] Raw rows: {len(df)}")
+    print(f"[GE] Good rows: {len(good_df)}")
+    print(f"[GE] Bad rows: {len(df) - len(good_df)}")
 
-    if bad_ids:
-        bad_ids_sql = ",".join(str(b) for b in bad_ids)
-        where_clause = f"updated_at::date = %s AND id NOT IN ({bad_ids_sql})"
-    else:
-        where_clause = "updated_at::date = %s"
-
-    pg_cursor.execute(
-        f"""
-            SELECT {cols_csv}
-            FROM {table}
-            WHERE {where_clause}
-            """,
-        (date,),
-    )
-    good_rows = pg_cursor.fetchall()
-
-    print(f"[GE] good rows count: {len(good_rows)}")
-
-    if not good_rows:
-        print("[GE] No rows to load into ClickHouse. Finish.")
-        pg_cursor.close()
-        pg_client.close()
-        return
-
-    data_for_ch = [[row[col] for col in cols] for row in good_rows]
-
-    print(f"[GE] inserting {len(data_for_ch)} clean rows into ClickHouse table {table}...")
+    cols = list(good_df.columns)
+    data_for_ch = good_df.values.tolist()
 
     ch_client.insert(
         table,
@@ -159,9 +144,6 @@ def main():
     )
 
     print("[GE] CLEAN DATA LOADED INTO CLICKHOUSE. Validation complete.")
-
-    pg_cursor.close()
-    pg_client.close()
 
 
 if __name__ == "__main__":
