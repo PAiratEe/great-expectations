@@ -14,7 +14,7 @@ action_list:
       class_name: UpdateDataDocsAction
   - name: datahub_action
     action:
-      module_name: datahub_gx_plugin.action
+      module_name: datahub.integrations.great_expectations.action
       class_name: DataHubValidationAction
       server_url: http://datahub-datahub-gms:8080
       token: eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg
