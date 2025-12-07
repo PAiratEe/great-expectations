@@ -45,6 +45,6 @@ datasources:
       class_name: SqlAlchemyExecutionEngine
       connection_string: clickhouse+http://default:dCkUgJH3JI@clickhouse.default.svc.cluster.local:8123/default
     data_connectors:
-      ch_tables_connector:
+      ch_tables:
         class_name: InferredAssetSqlDataConnector
         include_schema_name: true
