@@ -44,8 +44,9 @@ datasources:
     execution_engine:
       class_name: SqlAlchemyExecutionEngine
       connection_string: postgresql+psycopg2://postgres:s2KoXMe7jE@postgresql.default.svc.cluster.local:5432/postgres
+
     data_connectors:
       pg_tables:
         class_name: RuntimeDataConnector
-      batch_identifiers:
-        - default_identifier_name
+        batch_identifiers:
+          - default_identifier_name
