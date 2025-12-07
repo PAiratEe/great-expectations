@@ -47,4 +47,6 @@ datasources:
     data_connectors:
       pg_tables:
         class_name: RuntimeDataConnector
+      batch_identifiers:
+        - default_identifier_name
 
