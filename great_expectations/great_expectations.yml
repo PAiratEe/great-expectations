@@ -43,7 +43,7 @@ datasources:
     class_name: Datasource
     execution_engine:
       class_name: SqlAlchemyExecutionEngine
-      connection_string: postgresql+psycopg2://postgres:s2KoXMe7jE@postgres.default.svc.cluster.local:5432/public
+      connection_string: postgresql+psycopg2://postgres:s2KoXMe7jE@postgresql.default.svc.cluster.local:5432/postgres
     data_connectors:
       pg_tables:
         class_name: RuntimeDataConnector

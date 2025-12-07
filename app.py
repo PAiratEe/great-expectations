@@ -7,10 +7,6 @@ import argparse
 
 
 def ch_float_list(values):
-    """
-    Формирует корректный список float литералов для ClickHouse:
-    id IN (1.0, 3.5, 9.0)
-    """
     return ",".join(str(float(v)) for v in values)
 
 
@@ -28,8 +24,8 @@ ch_client = clickhouse_connect.get_client(
 )
 
 pg_client = psycopg2.connect(
-    host="postgres.default.svc.cluster.local",
-    database="public",
+    host="postgresql.default.svc.cluster.local",
+    database="postgres",
     user="postgres",
     password="s2KoXMe7jE",
     port=5432
