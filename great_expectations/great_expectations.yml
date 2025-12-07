@@ -48,3 +48,4 @@ datasources:
       ch_tables:
         class_name: InferredAssetSqlDataConnector
         include_schema_name: true
+        create_temp_table: false
