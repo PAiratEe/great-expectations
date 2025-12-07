@@ -65,6 +65,9 @@ def main():
         ]
     )
 
+    run_results = results['run_results']
+    print(f"[GE] {run_results}")
+
     bad_indices = set()
 
     run_results = results.get("run_results", {})
