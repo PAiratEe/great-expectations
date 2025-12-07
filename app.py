@@ -134,6 +134,9 @@ def main():
     print(f"[GE] Good rows: {len(good_df)}")
     print(f"[GE] Bad rows: {len(df) - len(good_df)}")
 
+    good_df = good_df.replace({pd.NaT: None})
+    good_df = good_df.where(pd.notnull(good_df), None)
+
     cols = list(good_df.columns)
     data_for_ch = good_df.values.tolist()
 
