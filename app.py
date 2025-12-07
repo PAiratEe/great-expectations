@@ -58,8 +58,7 @@ def main():
                 FROM {table}
                 WHERE updated_at::date = '{date}'
             """
-        },
-        batch_identifiers = {"runtime_param": "batch1"}
+        }
     )
 
     results = context.run_checkpoint(
