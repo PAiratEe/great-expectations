@@ -8,3 +8,4 @@ clickhouse-sqlalchemy
 inflection
 psycopg2
 acryl-datahub[great-expectations]
+sqlalchemy==1.4.49

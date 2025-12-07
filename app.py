@@ -97,7 +97,7 @@ def main():
         checkpoint_name=checkpoint_name,
         validations=[
             {
-                "batch_request": batch_request_sql,
+                "batch_request": batch_request_pandas,
                 "expectation_suite_name": suite_name
             }
         ]
