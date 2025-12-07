@@ -39,7 +39,7 @@ anonymous_usage_statistics:
   enabled: false
 
 datasources:
-  my_filesystem_datasource:
+  clickhouse_ds:
     class_name: Datasource
     execution_engine:
       class_name: SqlAlchemyExecutionEngine
