@@ -7,3 +7,4 @@ acryl-datahub-gx-plugin
 clickhouse_connect
 clickhouse-sqlalchemy
 inflection
+psycopg2

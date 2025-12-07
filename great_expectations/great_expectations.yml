@@ -39,13 +39,14 @@ anonymous_usage_statistics:
   enabled: false
 
 datasources:
-  clickhouse_ds:
+  postgres_ds:
     class_name: Datasource
     execution_engine:
       class_name: SqlAlchemyExecutionEngine
-      connection_string: clickhouse+http://default:dCkUgJH3JI@clickhouse.default.svc.cluster.local:8123/default
+      connection_string: postgresql+psycopg2://postgres:s2KoXMe7jE@postgres.default.svc.cluster.local:5432/public
     data_connectors:
-      ch_tables:
-        class_name: InferredAssetSqlDataConnector
-        include_schema_name: true
-        create_temp_table: false
+      pg_tables:
+        class_name: RuntimeDataConnector
+        batch_identifiers:
+          - runtime_param
+

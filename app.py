@@ -1,5 +1,6 @@
 import great_expectations as gx
 import clickhouse_connect
+import psycopg2.extras
 from great_expectations.core.batch import RuntimeBatchRequest, BatchRequest
 import pandas as pd
 import argparse
@@ -19,12 +20,22 @@ DEFAULT_SUITE = "spark_streaming_suite"
 
 context = gx.DataContext(GE_DIR)
 
-client = clickhouse_connect.get_client(
+ch_client = clickhouse_connect.get_client(
     host="clickhouse.default.svc.cluster.local",
     username="default",
     password="dCkUgJH3JI",
     port=8123
 )
+
+pg_client = psycopg2.connect(
+    host="postgres.default.svc.cluster.local",
+    database="public",
+    user="postgres",
+    password="s2KoXMe7jE",
+    port=5432
+)
+
+pg_cursor = pg_client.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
 
 def main():
@@ -37,22 +48,22 @@ def main():
 
     args = parser.parse_args()
     table = args.table
-    clean_table = f"analytics.mart_{table}"
     date = f"{args.year}-{args.month}-{args.day}"
     suite_name = f"{table}_suite"
     checkpoint_name = DEFAULT_CHECKPOINT
 
     batch_request = BatchRequest(
-        datasource_name="clickhouse_ds",
-        data_connector_name="ch_tables",
-        data_asset_name=f"default.{table}",
+        datasource_name="postgres_ds",
+        data_connector_name="pg_tables",
+        data_asset_name=table,
         batch_spec_passthrough={
             "query": f"""
                 SELECT *
                 FROM {table}
-                WHERE toDate(updated_at) = '{date}'
+                WHERE updated_at::date = '{date}'
             """
-        }
+        },
+        batch_identifiers = {"runtime_param": "batch1"}
     )
 
     results = context.run_checkpoint(
@@ -83,55 +94,78 @@ def main():
     bad_indices = sorted(bad_indices)
     print(f"[GE] bad row indices: {bad_indices}")
 
-    if not bad_indices:
-        print("[GE] All rows passed validation. Loading all rows...")
+    if bad_indices:
+        idx_list_sql = ",".join(str(i) for i in bad_indices)
 
-        client.command(f"""
-            INSERT INTO {clean_table}
-            SELECT *
+        pg_cursor.execute(
+            f"""
+            SELECT id
+            FROM (
+                SELECT id, row_number() OVER () - 1 AS idx
+                FROM {table}
+                WHERE updated_at::date = %s
+            ) t
+            WHERE idx IN ({idx_list_sql})
+            """,
+            (date,),
+        )
+        rows = pg_cursor.fetchall()
+        bad_ids = [r["id"] for r in rows]
+    else:
+        bad_ids = []
+
+    print(f"[GE] bad ids: {bad_ids}")
+
+    pg_cursor.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = %s
+        ORDER BY ordinal_position
+        """,
+        (table,),
+    )
+    cols = [r["column_name"] for r in pg_cursor.fetchall()]
+    cols_csv = ", ".join(cols)
+
+    if bad_ids:
+        bad_ids_sql = ",".join(str(b) for b in bad_ids)
+        where_clause = f"updated_at::date = %s AND id NOT IN ({bad_ids_sql})"
+    else:
+        where_clause = "updated_at::date = %s"
+
+    pg_cursor.execute(
+        f"""
+            SELECT {cols_csv}
             FROM {table}
-            WHERE toDate(updated_at) = '{date}'
-        """)
+            WHERE {where_clause}
+            """,
+        (date,),
+    )
+    good_rows = pg_cursor.fetchall()
 
-        print("[GE] COMPLETE — all rows valid and loaded.")
+    print(f"[GE] good rows count: {len(good_rows)}")
+
+    if not good_rows:
+        print("[GE] No rows to load into ClickHouse. Finish.")
+        pg_cursor.close()
+        pg_client.close()
         return
 
-    idx_list_sql = ",".join(str(i) for i in bad_indices)
+    data_for_ch = [[row[col] for col in cols] for row in good_rows]
 
-    bad_ids_rows = client.query(f"""
-        SELECT id
-        FROM (
-            SELECT id, row_number() OVER () - 1 AS idx
-            FROM {table}
-            WHERE toDate(updated_at) = '{date}'
-        )
-        WHERE idx IN ({idx_list_sql})
-    """).result_rows
+    print(f"[GE] inserting {len(data_for_ch)} clean rows into ClickHouse table {table}...")
 
-    bad_ids = [float(row[0]) for row in bad_ids_rows]
-    print(f"[GE] bad id values: {bad_ids}")
+    ch_client.insert(
+        table,
+        data_for_ch,
+        column_names=cols,
+    )
 
-    bad_ids_filter = ch_float_list(bad_ids)
+    print("[GE] CLEAN DATA LOADED INTO CLICKHOUSE. Validation complete.")
 
-    clean_filter = f"id NOT IN ({bad_ids_filter})"
-
-    print(f"""
-        INSERT INTO {clean_table}
-        SELECT *
-        FROM {table}
-        WHERE toDate(updated_at) = '{date}'
-          AND {clean_filter}
-    """)
-
-    client.command(f"""
-        INSERT INTO {clean_table}
-        SELECT *
-        FROM {table}
-        WHERE toDate(updated_at) = '{date}'
-          AND {clean_filter}
-    """)
-
-    print("[GE] CLEAN DATA LOADED. Validation complete.")
+    pg_cursor.close()
+    pg_client.close()
 
 
 if __name__ == "__main__":
