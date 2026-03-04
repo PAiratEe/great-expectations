@@ -5,10 +5,13 @@ from great_expectations.core.batch import RuntimeBatchRequest, BatchRequest
 import pandas as pd
 import argparse
 
-
-def ch_float_list(values):
-    return ",".join(str(float(v)) for v in values)
-
+from datahub.emitter.rest_emitter import DatahubRestEmitter
+from datahub.emitter.mce_builder import make_dataset_urn
+from datahub.metadata.schema_classes import (
+    UpstreamLineageClass,
+    UpstreamClass,
+    FineGrainedLineageClass,
+)
 
 GE_DIR = "/ge/great_expectations"
 DEFAULT_CHECKPOINT = "spark_streaming_checkpoint"
@@ -156,6 +159,31 @@ def main():
     )
 
     print("[GE] CLEAN DATA LOADED INTO CLICKHOUSE. Validation complete.")
+
+    emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080")
+
+    pg_urn = make_dataset_urn("postgres", f"postgres.{table}", "PROD")
+    ch_urn = make_dataset_urn("clickhouse", f"default.{table}", "PROD")
+
+    fine_grained = [
+        FineGrainedLineageClass(
+            upstreamType="FIELD_SET",
+            downstreamType="FIELD_SET",
+            upstreams=[f"{pg_urn}.{col}"],
+            downstreams=[f"{ch_urn}.{col}"],
+        )
+        for col in cols
+    ]
+
+    aspect = UpstreamLineageClass(
+        upstreams=[UpstreamClass(dataset=pg_urn, type="TRANSFORMED")],
+        fineGrainedLineages=fine_grained,
+    )
+
+    emitter.emit_upstream_lineage(ch_urn, aspect)
+
+    print("[DataHub] Column lineage Postgres → ClickHouse sent.")
+    print("[GE] Validation complete.")
 
 
 if __name__ == "__main__":
