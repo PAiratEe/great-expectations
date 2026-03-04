@@ -12,6 +12,7 @@ from datahub.metadata.schema_classes import (
     UpstreamClass,
     FineGrainedLineageClass,
 )
+from datahub.emitter.mcp import MetadataChangeProposalWrapper
 
 GE_DIR = "/ge/great_expectations"
 DEFAULT_CHECKPOINT = "spark_streaming_checkpoint"
@@ -180,7 +181,12 @@ def main():
         fineGrainedLineages=fine_grained,
     )
 
-    emitter.emit_upstream_lineage(ch_urn, aspect)
+    mcp = MetadataChangeProposalWrapper(
+        entityUrn=ch_urn,
+        aspect=aspect,
+    )
+
+    emitter.emit(mcp)
 
     print("[DataHub] Column lineage Postgres → ClickHouse sent.")
     print("[GE] Validation complete.")
