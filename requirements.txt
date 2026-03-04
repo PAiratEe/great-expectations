@@ -1,10 +1,7 @@
 great_expectations==0.15.26
-pyspark==3.5.0
 pandas==2.3.3
 clickhouse_connect==0.13.0
-clickhouse-sqlalchemy==0.2.9
 inflection==0.5.1
 psycopg2==2.9.11
-acryl-datahub[great-expectations]
-sqlalchemy==1.4.49
+acryl-datahub[great-expectations]==1.1.0.4
 datahub==0.999.1

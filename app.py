@@ -161,7 +161,9 @@ def main():
 
     print("[GE] CLEAN DATA LOADED INTO CLICKHOUSE. Validation complete.")
 
-    emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080")
+    emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080",
+                                 "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg"
+                                 )
 
     pg_urn = make_dataset_urn("postgres", f"postgres.{table}", "PROD")
     ch_urn = make_dataset_urn("clickhouse", f"default.{table}", "PROD")
