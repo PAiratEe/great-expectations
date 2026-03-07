@@ -23,6 +23,7 @@ GE_DIR = "/ge/great_expectations"
 DEFAULT_CHECKPOINT = "spark_streaming_checkpoint"
 DEFAULT_SUITE = "spark_streaming_suite"
 
+
 context = gx.DataContext(GE_DIR)
 
 ch_client = clickhouse_connect.get_client(
@@ -177,15 +178,15 @@ def main():
     fineGrainedLineages = [
         FineGrainedLineage(
             upstreamType=FineGrainedLineageUpstreamType.FIELD_SET,
-            upstreams=[fldUrn("postgres", table, col)],
+            upstreams=[fldUrn("postgres", f"public.{table}", col)],
             downstreamType=FineGrainedLineageDownstreamType.FIELD,
-            downstreams=[fldUrn("clickhouse", f"{table}_replica", col)],
+            downstreams=[fldUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}", col)],
         )
         for col in cols
     ]
 
     upstream = Upstream(
-        dataset=datasetUrn("postgres", table),
+        dataset=datasetUrn("postgres", f"public.{table}"),
         type=DatasetLineageType.TRANSFORMED,
     )
 
@@ -195,15 +196,19 @@ def main():
     )
 
     lineageMcp = MetadataChangeProposalWrapper(
-        entityUrn=datasetUrn("clickhouse", f"{table}_replica"),
+        entityUrn=datasetUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}"),
         aspect=fieldLineages,
     )
+
+    print("[CLICKHOUSE URN] ", datasetUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}"))
 
     print(lineageMcp)
 
     emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080",
                                  "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg"
                                  )
+    # urn: li:schemaField: (urn:li:dataset:(urn:li:dataPlatform:postgres, postgres.public.sample_data_users, PROD), address__country_code)
+    # urn: li:schemaField: (urn:li:dataset:(urn:li:dataPlatform:clickhouse, DatabaseNameToBeIngested.default.sample_data_users, PROD), address__country_code)
 
     emitter.emit(lineageMcp)
 
