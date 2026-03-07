@@ -175,7 +175,7 @@ def main():
 
     print("[GE] CLEAN DATA LOADED INTO CLICKHOUSE. Validation complete.")
 
-    fineGrainedLineages = [
+    postgresClickhouseLineage = [
         FineGrainedLineage(
             upstreamType=FineGrainedLineageUpstreamType.FIELD_SET,
             upstreams=[fldUrn("postgres", f"postgres.public.{table}", col)],
@@ -185,22 +185,45 @@ def main():
         for col in cols
     ]
 
-    upstream = Upstream(
+    postgresClickhouseUpstream = Upstream(
         dataset=datasetUrn("postgres", f"postgres.public.{table}"),
         type=DatasetLineageType.TRANSFORMED,
     )
 
-    fieldLineages = UpstreamLineage(
-        upstreams=[upstream],
-        fineGrainedLineages=fineGrainedLineages,
+    postgresClickhouseFieldLineages = UpstreamLineage(
+        upstreams=[postgresClickhouseUpstream],
+        fineGrainedLineages=postgresClickhouseLineage,
     )
 
-    lineageMcp = MetadataChangeProposalWrapper(
+    postgresClickhouseLineageMcp = MetadataChangeProposalWrapper(
         entityUrn=datasetUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}_replica"),
-        aspect=fieldLineages,
+        aspect=postgresClickhouseFieldLineages,
     )
 
-    print(lineageMcp)
+    clickhouseClickhouseLineage = [
+        FineGrainedLineage(
+            upstreamType=FineGrainedLineageUpstreamType.FIELD_SET,
+            upstreams=[fldUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}_replica", col)],
+            downstreamType=FineGrainedLineageDownstreamType.FIELD,
+            downstreams=[fldUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}", col)],
+        )
+        for col in cols
+    ]
+
+    clickhouseClickhouseUpstream = Upstream(
+        dataset=datasetUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}_replica"),
+        type=DatasetLineageType.TRANSFORMED,
+    )
+
+    clickhouseClickhouseFieldLineages = UpstreamLineage(
+        upstreams=[clickhouseClickhouseUpstream],
+        fineGrainedLineages=clickhouseClickhouseLineage,
+    )
+
+    clickhouseClickhouseLineageMcp = MetadataChangeProposalWrapper(
+        entityUrn=datasetUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}"),
+        aspect=clickhouseClickhouseFieldLineages,
+    )
 
     emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080",
                                  "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg"
@@ -208,7 +231,8 @@ def main():
     # urn: li:schemaField: (urn:li:dataset:(urn:li:dataPlatform:postgres, postgres.public.sample_data_users, PROD), address__country_code)
     # urn: li:schemaField: (urn:li:dataset:(urn:li:dataPlatform:clickhouse, DatabaseNameToBeIngested.default.sample_data_users, PROD), address__country_code)
 
-    emitter.emit(lineageMcp)
+    emitter.emit(postgresClickhouseLineageMcp)
+    emitter.emit(clickhouseClickhouseLineageMcp)
 
     print("[DataHub] Column lineage Postgres → ClickHouse sent.")
     print("[GE] Validation complete.")
