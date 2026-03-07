@@ -179,7 +179,7 @@ def main():
             upstreamType=FineGrainedLineageUpstreamType.FIELD_SET,
             upstreams=[fldUrn("postgres", table, col)],
             downstreamType=FineGrainedLineageDownstreamType.FIELD,
-            downstreams=[fldUrn("clickhouse", table, col)],
+            downstreams=[fldUrn("clickhouse", f"${table}_replica", col)],
         )
         for col in cols
     ]
