@@ -228,10 +228,8 @@ def main():
     emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080",
                                  "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg"
                                  )
-    # urn: li:schemaField: (urn:li:dataset:(urn:li:dataPlatform:postgres, postgres.public.sample_data_users, PROD), address__country_code)
-    # urn: li:schemaField: (urn:li:dataset:(urn:li:dataPlatform:clickhouse, DatabaseNameToBeIngested.default.sample_data_users, PROD), address__country_code)
 
-    emitter.emit(postgresClickhouseLineageMcp)
+    # emitter.emit(postgresClickhouseLineageMcp)
     emitter.emit(clickhouseClickhouseLineageMcp)
 
     print("[DataHub] Column lineage Postgres → ClickHouse sent.")
