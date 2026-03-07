@@ -179,7 +179,7 @@ def main():
             upstreamType=FineGrainedLineageUpstreamType.FIELD_SET,
             upstreams=[fldUrn("postgres", table, col)],
             downstreamType=FineGrainedLineageDownstreamType.FIELD,
-            downstreams=[fldUrn("clickhouse", f"${table}_replica", col)],
+            downstreams=[fldUrn("clickhouse", f"{table}_replica", col)],
         )
         for col in cols
     ]
@@ -195,7 +195,7 @@ def main():
     )
 
     lineageMcp = MetadataChangeProposalWrapper(
-        entityUrn=datasetUrn("clickhouse", table),
+        entityUrn=datasetUrn("clickhouse", f"{table}_replica"),
         aspect=fieldLineages,
     )
 
