@@ -178,7 +178,7 @@ def main():
     fineGrainedLineages = [
         FineGrainedLineage(
             upstreamType=FineGrainedLineageUpstreamType.FIELD_SET,
-            upstreams=[fldUrn("postgres", f"public.{table}", col)],
+            upstreams=[fldUrn("postgres", f"postgres.public.{table}", col)],
             downstreamType=FineGrainedLineageDownstreamType.FIELD,
             downstreams=[fldUrn("clickhouse", f"DatabaseNameToBeIngested.default.{table}", col)],
         )
@@ -186,7 +186,7 @@ def main():
     ]
 
     upstream = Upstream(
-        dataset=datasetUrn("postgres", f"public.{table}"),
+        dataset=datasetUrn("postgres", f"postgres.public.{table}"),
         type=DatasetLineageType.TRANSFORMED,
     )
 
