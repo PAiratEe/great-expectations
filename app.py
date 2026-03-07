@@ -121,10 +121,10 @@ def main():
     )
 
     run_results = results['run_results']
-    print(f"[GE metadata] {run_results}")
+    # print(f"[GE metadata] {run_results}")
 
     run_results_pandas = results_pandas['run_results']
-    print(f"[GE data to CH] {run_results_pandas}")
+    # print(f"[GE data to CH] {run_results_pandas}")
 
     mask = [True] * len(df)
 
@@ -198,6 +198,8 @@ def main():
         entityUrn=datasetUrn("clickhouse", table),
         aspect=fieldLineages,
     )
+
+    print(lineageMcp)
 
     emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080",
                                  "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg"
