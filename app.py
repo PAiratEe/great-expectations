@@ -1,3 +1,6 @@
+from datahub.metadata.com.linkedin.pegasus2avro.dataset import FineGrainedLineage, FineGrainedLineageUpstreamType, \
+    FineGrainedLineageDownstreamType, Upstream, UpstreamLineage, DatasetLineageType
+
 import great_expectations as gx
 import clickhouse_connect
 import psycopg2.extras
@@ -6,12 +9,14 @@ import pandas as pd
 import argparse
 
 from datahub.emitter.rest_emitter import DatahubRestEmitter
+import datahub.emitter.mce_builder as builder
 from datahub.emitter.mce_builder import make_dataset_urn, make_schema_field_urn
 from datahub.metadata.schema_classes import (
     UpstreamLineageClass,
     UpstreamClass,
     FineGrainedLineageClass,
 )
+
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 
 GE_DIR = "/ge/great_expectations"
@@ -38,34 +43,12 @@ pg_client = psycopg2.connect(
 pg_cursor = pg_client.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
 
-def emit_pg_to_ch_column_lineage(
-    emitter: DatahubRestEmitter,
-    table: str,
-    cols: list[str],
-    env: str = "PROD",
-) -> None:
-    pg_urn = make_dataset_urn("postgres", f"public.{table}", env)
-    ch_urn = make_dataset_urn("clickhouse", f"default.{table}", env)
+def datasetUrn(platform, tbl):
+    return builder.make_dataset_urn(platform, tbl)
 
-    fine_grained = [
-        FineGrainedLineageClass(
-            upstreamType="FIELD_SET",
-            downstreamType="FIELD_SET",
-            upstreams=[make_schema_field_urn(pg_urn, col)],
-            downstreams=[make_schema_field_urn(ch_urn, col)],
-            transformOperation="TRANSFORM",
-            confidenceScore=1.0,
-        )
-        for col in cols
-    ]
 
-    aspect = UpstreamLineageClass(
-        upstreams=[UpstreamClass(dataset=pg_urn, type="TRANSFORMED")],
-        fineGrainedLineages=fine_grained,
-    )
-
-    mcp = MetadataChangeProposalWrapper(entityUrn=ch_urn, aspect=aspect)
-    emitter.emit(mcp)
+def fldUrn(platform, tbl, fld):
+    return builder.make_schema_field_urn(datasetUrn(platform, tbl), fld)
 
 
 def main():
@@ -191,10 +174,36 @@ def main():
 
     print("[GE] CLEAN DATA LOADED INTO CLICKHOUSE. Validation complete.")
 
+    fineGrainedLineages = [
+        FineGrainedLineage(
+            upstreamType=FineGrainedLineageUpstreamType.FIELD_SET,
+            upstreams=[fldUrn("postgres", table, col)],
+            downstreamType=FineGrainedLineageDownstreamType.FIELD,
+            downstreams=[fldUrn("clickhouse", table, col)],
+        )
+        for col in cols
+    ]
+
+    upstream = Upstream(
+        dataset=datasetUrn("postgres", table),
+        type=DatasetLineageType.TRANSFORMED,
+    )
+
+    fieldLineages = UpstreamLineage(
+        upstreams=[upstream],
+        fineGrainedLineages=fineGrainedLineages,
+    )
+
+    lineageMcp = MetadataChangeProposalWrapper(
+        entityUrn=datasetUrn("clickhouse", table),
+        aspect=fieldLineages,
+    )
+
     emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080",
                                  "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg"
                                  )
-    emit_pg_to_ch_column_lineage(emitter, table=table, cols=cols)
+
+    emitter.emit(lineageMcp)
 
     print("[DataHub] Column lineage Postgres → ClickHouse sent.")
     print("[GE] Validation complete.")
