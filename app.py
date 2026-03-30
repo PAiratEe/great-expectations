@@ -29,7 +29,7 @@ context = gx.DataContext(GE_DIR)
 ch_client = clickhouse_connect.get_client(
     host="clickhouse.default.svc.cluster.local",
     username="default",
-    password="dCkUgJH3JI",
+    password="9pSRvaKthZ",
     port=8123
 )
 
