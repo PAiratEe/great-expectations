@@ -201,8 +201,7 @@ def main():
     )
 
     emitter = DatahubRestEmitter("http://datahub-datahub-gms:8080",
-                                 "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjlkOTdhMzAwLTQyYmItNGMxMC04MWMzLTIzMjJlMTZhMmQzNyIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.CkAxNq5Kyx4tsc2KCDFROUR8EUbMIgdlmpAHOizZcGg"
-                                 )
+                                 "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjRjOGJiZTE1LTIwYzgtNDllOS1iZDFkLWExYTMwMGVjZTEzNCIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.L9rYcgw1E1xQsQB8qrOSjX6r8DMbSlHNuacYHW7gk3I")
 
     emitter.emit(postgresClickhouseLineageMcp)
 
